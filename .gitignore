@@ -44,3 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Supabase
+.supabase/
+
+# Entorno y Credenciales
+.env
+*.env
