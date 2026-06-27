@@ -1,0 +1,36 @@
+Escúchame bien, hijo. Un arquitecto no solo apila ladrillos; debe conocer la composición química del cemento que los une. Has estado instalando, configurando y saltando entre herramientas, y es vital hacer una pausa para mirar el mapa completo. Si no entiendes qué hace cada pieza, tu sistema colapsará cuando haya un error.
+
+Aquí tienes la radiografía exacta del ecosistema profesional, 100% gratuito y portátil que hemos construido para tu aplicación de incidencias. Lo diseñé estratégicamente para que puedas programar desde tu sistema Canaima con Zsh en casa, y mañana continuar en el laboratorio del Liceo Nacional Hugo Rafael Chávez Frías usando un simple navegador web, sin perder un solo byte de progreso.
+
+Esta es tu pila tecnológica (*Tech Stack*):
+
+### 1. El Entorno de Trabajo y Control de Versiones (Tu Taller)
+
+* **Git y GitHub:** Es la columna vertebral de tu proyecto. Es la única "fuente de verdad". Todo tu código vive aquí, permitiéndote sincronizar el trabajo entre tu computadora física y la nube mediante los comandos `push` y `pull`.
+* **Linux (Canaima / Zsh):** Tu entorno local. Al ser un sistema basado en Debian, interactúa perfectamente con las herramientas de desarrollo modernas a través de la terminal.
+* **GitHub Codespaces:** Tu máquina virtual efímera en la nube. Es un contenedor Docker que te da un Visual Studio Code completo en el navegador web. Lo usamos para programar cuando no estás en tu computadora personal, consumiendo las 60 horas gratuitas mensuales que te da GitHub.
+
+### 2. El Frontend (La Interfaz del Usuario)
+
+* **Flutter SDK:** El motor creado por mí (Google) para construir tu aplicación móvil y web desde un solo código fuente base.
+* **Paquete `supabase_flutter`:** La librería de Dart que instalamos en tu `pubspec.yaml` para que tu aplicación se pueda comunicar directamente con la base de datos de Supabase.
+* **Paquete `http`:** La librería de Dart que usaremos para que tu aplicación le envíe las peticiones (el texto ruidoso del profesor) a tu servidor.
+
+### 3. El Backend y Base de Datos (El Músculo)
+
+* **Supabase (PostgreSQL):** Tu base de datos relacional en la nube. Aquí creamos la tabla `incidencias_ia` para almacenar permanentemente la información estructurada y el texto original dictado.
+* **Supabase CLI:** La herramienta de línea de comandos que instalaste en tu terminal. Te permite gestionar tu servidor, autenticarte y generar la estructura de carpetas (la carpeta `supabase/`) sin salir de tu editor de código.
+* **Supabase Edge Functions (Deno / TypeScript):** El reemplazo estratégico que hicimos al toparnos con el muro de facturación de Google Cloud. Es tu servidor *serverless* gratuito. Aquí vivirá el código que recibe la petición de Flutter.
+
+### 4. El Cerebro (La Inteligencia Artificial)
+
+* **Google AI Studio:** Tu centro de mando de IA. Aquí generaste tu **API Key**, la llave de acceso maestra que introduciremos en la variable de entorno de Supabase.
+* **Gemini 2.5 Flash API:** Mi modelo fundacional rápido y económico. Será invocado por tu Edge Function para transformar el texto desordenado del profesor en un objeto JSON matemáticamente perfecto, usando el *prompt* estricto que diseñamos juntos.
+
+*(Nota histórica: En el proceso instalamos brevemente Google Cloud CLI (`gcloud`), pero lo descartamos tácticamente al pivotar hacia Supabase para evitar el bloqueo de tu tarjeta. Ese conocimiento no fue en vano; la nube funciona igual en todas partes).*
+
+---
+
+Ahora que tienes la visión general y comprendes cada engranaje de esta máquina, nuestro entorno físico y virtual está sincronizado y listo. La próxima fase es la más crítica: escribir el código que une el músculo con el cerebro.
+
+**Para guiarte en el siguiente paso táctico:** ¿Te sientes listo para que abramos ese archivo `index.ts` de Supabase y programemos la lógica en TypeScript que recibirá el texto de la app, llamará a Gemini y devolverá el JSON estructurado?
