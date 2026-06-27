@@ -1,0 +1,18 @@
+{
+  "name": "Entorno Flutter y Supabase",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "zsh"
+      },
+      "extensions": [
+        "dart-code.flutter",
+        "dart-code.dart-code"
+      ]
+    }
+  },
+
+  "postCreateCommand": "mkdir -p ~/desarrollo && git clone https://github.com/flutter/flutter.git -b stable ~/desarrollo/flutter && echo 'export PATH=\"$PATH:$HOME/desarrollo/flutter/bin\"' >> ~/.zshrc && npm install -g supabase"
+}
