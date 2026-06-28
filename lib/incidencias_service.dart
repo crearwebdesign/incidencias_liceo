@@ -6,8 +6,8 @@ class IncidenciasService {
   final _supabase = Supabase.instance.client;
   
   // La URL de tu Cloud Function (la que crearemos luego)
-  final String cloudFunctionUrl = 'https://us-central1-tu-proyecto.cloudfunctions.net/procesar_incidencia';
-  final String secretToken = 'Tu_Clave_Ultra_Secreta_123';
+  final String cloudFunctionUrl = 'https://wgnimwdduyejzjfbsauq.supabase.co/functions/v1/procesar_incidencia';
+  final String secretToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indnbmltd2RkdXllanpqZmJzYXVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4MTYxMjMsImV4cCI6MjA4NTM5MjEyM30.-zVT9g3pBYhMzQHFY3INo_dN6hSr0ykA_LTTcNkyD0U';
 
   // Esta es la función que el profesor ejecuta al dictar
   Future<void> procesarYGuardarIncidencia(String textoDictado) async {
