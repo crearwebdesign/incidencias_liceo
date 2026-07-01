@@ -1,0 +1,154 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.familiar (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  ci_representante text NOT NULL UNIQUE,
+  nombres_representante text NOT NULL,
+  apellidos_representante text NOT NULL,
+  telefono_1 text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT familiar_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.alumnos (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  ni smallint,
+  ci text NOT NULL UNIQUE,
+  nombres text NOT NULL,
+  apellidos text NOT NULL,
+  nacionalidad text,
+  lugar_nacimiento text,
+  fecha_nacimiento date,
+  sexo text,
+  estatus text DEFAULT 'REGULAR'::text,
+  anio_actual smallint,
+  seccion_actual text,
+  periodo_origen text,
+  anio_origen text,
+  seccion_origen text,
+  fecha_retiro date,
+  observacion_retiro text,
+  observaciones text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  representante_id bigint,
+  padre_id bigint,
+  pensum character varying,
+  nlistaactual smallint,
+  entidadfederal character varying,
+  materiaPendient1 text,
+  materiaPendient2 text,
+  CONSTRAINT alumnos_pkey PRIMARY KEY (id),
+  CONSTRAINT alumnos_representante_id_fkey FOREIGN KEY (representante_id) REFERENCES public.familiar(id),
+  CONSTRAINT alumnos_padre_id_fkey FOREIGN KEY (padre_id) REFERENCES public.padres(id)
+);
+CREATE TABLE public.padres (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  ci_padre text,
+  nombre_padre text,
+  apellido_padre text,
+  telefono_2 text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT padres_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.contactos_adicionales (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  alumno_id bigint NOT NULL,
+  tipo_contacto text,
+  nombre_contacto text,
+  telefono_3 text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT contactos_adicionales_pkey PRIMARY KEY (id),
+  CONSTRAINT contactos_adicionales_alumno_id_fkey FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id)
+);
+CREATE TABLE public.materias (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  codigo text,
+  nombre text NOT NULL,
+  orden integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  pensum character varying,
+  CONSTRAINT materias_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.profesores (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  ci_profesor text NOT NULL UNIQUE,
+  nombres text NOT NULL,
+  apellidos text NOT NULL,
+  email text UNIQUE,
+  telefono text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT profesores_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.materia_profesor (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  materia_id bigint NOT NULL,
+  profesor_id bigint NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT materia_profesor_pkey PRIMARY KEY (id),
+  CONSTRAINT materia_profesor_materia_id_fkey FOREIGN KEY (materia_id) REFERENCES public.materias(id),
+  CONSTRAINT materia_profesor_profesor_id_fkey FOREIGN KEY (profesor_id) REFERENCES public.profesores(id)
+);
+CREATE TABLE public.periodos_academicos (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  nombre text NOT NULL,
+  descripcion text,
+  fecha_inicio date,
+  fecha_fin date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT periodos_academicos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.calificaciones_detalle (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  alumno_id bigint NOT NULL,
+  materia_id bigint NOT NULL,
+  periodo_id bigint NOT NULL,
+  nota_tipo text,
+  valor_nota text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT calificaciones_detalle_pkey PRIMARY KEY (id),
+  CONSTRAINT calificaciones_detalle_alumno_id_fkey FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT calificaciones_detalle_materia_id_fkey FOREIGN KEY (materia_id) REFERENCES public.materias(id),
+  CONSTRAINT calificaciones_detalle_periodo_id_fkey FOREIGN KEY (periodo_id) REFERENCES public.periodos_academicos(id)
+);
+CREATE TABLE public.promedios_finales (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  alumno_id bigint NOT NULL,
+  materia_id bigint NOT NULL,
+  periodo_id bigint NOT NULL,
+  promedio numeric,
+  literal text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT promedios_finales_pkey PRIMARY KEY (id),
+  CONSTRAINT promedios_finales_alumno_id_fkey FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT promedios_finales_materia_id_fkey FOREIGN KEY (materia_id) REFERENCES public.materias(id),
+  CONSTRAINT promedios_finales_periodo_id_fkey FOREIGN KEY (periodo_id) REFERENCES public.periodos_academicos(id)
+);
+CREATE TABLE public.usuarios (
+  id uuid NOT NULL,
+  email text NOT NULL UNIQUE,
+  nombres text NOT NULL,
+  apellidos text NOT NULL,
+  rol text NOT NULL CHECK (rol = ANY (ARRAY['admin'::text, 'director'::text, 'docente'::text, 'secretaria'::text, 'representante'::text])),
+  telefono text,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT usuarios_pkey PRIMARY KEY (id),
+  CONSTRAINT usuarios_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.incidencias_ia (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  creado_en timestamp with time zone DEFAULT now(),
+  estudiante_nombre character varying NOT NULL,
+  estudiante_apellido character varying NOT NULL,
+  grado character varying,
+  seccion character varying,
+  docente_reporta character varying,
+  materia character varying,
+  descripcion_falta text NOT NULL,
+  nivel_gravedad character varying CHECK (nivel_gravedad::text = ANY (ARRAY['leve'::character varying, 'moderada'::character varying, 'grave'::character varying]::text[])),
+  accion_sugerida text,
+  texto_original_dictado text,
+  procesado_por_ia boolean DEFAULT true,
+  CONSTRAINT incidencias_ia_pkey PRIMARY KEY (id)
+);
