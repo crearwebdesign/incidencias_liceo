@@ -2,35 +2,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// import 'incidencias_service.dart'; // Descomenta esto cuando lo vayas a usar
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Importamos Riverpod
+import 'router/app_router.dart'; // Importamos tu nuevo Guardián
 
 void main() async {
-  // Garantiza que los bindings de Flutter estén listos
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Cargamos la bóveda local (.env)
   await dotenv.load(fileName: ".env");
 
-  // Inicializamos Supabase (Versión Actualizada y Limpia de Warnings)
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? '',
-    publishableKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '', // <-- ESTE ES EL CAMBIO MAESTRO
+    publishableKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
-  runApp(const MyApp());
+  // Envolvemos toda la app en un ProviderScope para que Riverpod funcione
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+// Convertimos MyApp a ConsumerWidget para que pueda leer los Providers
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Incidencias Liceo',
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Leemos tu enrutador
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
+      title: 'App Utilidades Liceo',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const Scaffold(
-        body: Center(child: Text('Entorno Configurado con Éxito y Sin Advertencias')),
-      ),
+      // Le entregamos las llaves del carro al Guardián
+      routerConfig: router,
     );
   }
 }
