@@ -29,6 +29,7 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'App Utilidades Liceo',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue),
       // Le entregamos las llaves del carro al Guardián
       routerConfig: router,

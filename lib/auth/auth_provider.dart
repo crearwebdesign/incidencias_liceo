@@ -13,28 +13,32 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
   return ref.read(supabaseProvider).auth.onAuthStateChange;
 });
 
-// 3. El Inspector de Roles (FutureProvider)
-// A diferencia del Stream, un Future es una consulta de un solo viaje a la base de datos.
-final userRoleProvider = FutureProvider<String?>((ref) async {
-  // Primero, le preguntamos a Supabase si hay una sesión activa en el celular
-  final session = ref.read(supabaseProvider).auth.currentSession;
 
-  // Si no hay sesión (usuario deslogueado), devolvemos nulo inmediatamente.
+
+// 3. El Inspector de Perfil (Actualizado para solucionar el Bug de Caché)
+final userProfileProvider = FutureProvider<({String rol, String nombre})?>((ref) async {
+  
+  // ¡LA SOLUCIÓN AL BUG!: Usamos ref.watch(authStateProvider) en lugar de ref.read.
+  // Esto obliga a este proveedor a re-ejecutarse automáticamente cada vez que alguien hace login o logout.
+  final authState = ref.watch(authStateProvider);
+  final session = authState.value?.session;
+
   if (session == null) return null;
 
   try {
-    // Si hay sesión, extraemos el 'uuid' y vamos a TU tabla pública de usuarios.
-    // Esto es vital porque en Supabase, 'auth.users' es privada, pero 'public.usuarios'
-    // es donde tienes guardado el 'rol' (docente, director, etc).
+    // Traemos rol, nombres y apellidos desde tu tabla usuarios
     final response = await ref.read(supabaseProvider)
         .from('usuarios')
-        .select('rol')
+        .select('rol, nombres, apellidos')
         .eq('id', session.user.id)
-        .single(); // .single() exige que devuelva 1 sola fila exacta.
+        .single();
 
-    return response['rol'] as String?;
+    final rol = response['rol'] as String;
+    final nombreCompleto = '${response['nombres']} ${response['apellidos']}';
+
+    // Retornamos un "Record" de Dart con ambas variables
+    return (rol: rol, nombre: nombreCompleto);
   } catch (e) {
-    // Programación defensiva: Si falla la red o el usuario no existe en la tabla, lo tratamos como nulo.
     return null;
   }
 });

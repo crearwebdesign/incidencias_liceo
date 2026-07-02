@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_provider.dart';
+import '../screens/login_screen.dart';
+import '../screens/home_screen.dart';
 
 // El Proveedor del Enrutador
 // Al envolver GoRouter en un Provider, le damos el poder de leer otros proveedores (como el vigía de autenticación).
@@ -42,15 +44,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/login',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Pantalla de Login (Pendiente)')),
-        ),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Menú Principal App B (Pendiente)')),
-        ),
+        builder: (context, state) => const HomeScreen(),
       ),
     ],
   );
