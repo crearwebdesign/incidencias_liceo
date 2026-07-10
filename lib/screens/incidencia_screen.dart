@@ -1,6 +1,7 @@
 // lib/screens/incidencia_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/gemini_service.dart';
 
 class IncidenciaScreen extends ConsumerStatefulWidget {
   const IncidenciaScreen({super.key});
@@ -20,29 +21,70 @@ class _IncidenciaScreenState extends ConsumerState<IncidenciaScreen> {
   }
 
   // Esta función es el "esqueleto" que luego conectaremos con Gemini
-  void _procesarIncidencia() {
+ Future<void> _procesarIncidencia() async {
     if (_textoController.text.trim().isEmpty) return;
     
-    // Cerramos el teclado virtual si se está usando en móvil
+    // Cerramos el teclado
     FocusScope.of(context).unfocus();
 
     setState(() {
       _isProcessing = true;
     });
 
-    // Simulamos una espera de 2 segundos. 
-    // En el próximo paso, reemplazaremos esto con la llamada a la Edge Function.
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      // 1. Leemos el servicio de IA desde Riverpod
+      final geminiService = ref.read(geminiServiceProvider);
+      
+      // 2. Enviamos el relato del docente a la red neuronal
+      final resultado = await geminiService.analizarIncidencia(_textoController.text);
+
+      if (resultado != null && mounted) {
+        // 3. Mostramos el objeto JSON procesado en un diálogo de confirmación.
+        // (En el próximo paso, usaremos esto para buscar al alumno en la BD)
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Análisis Estructurado'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Alumno: ${resultado['nombres']} ${resultado['apellidos']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 8),
+                Text('Nivel de Gravedad: ${resultado['gravedad'].toString().toUpperCase()}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+                const SizedBox(height: 12),
+                const Text('Síntesis del Reporte:', style: TextStyle(color: Colors.grey)),
+                Text(resultado['resumen_falta'], style: const TextStyle(fontStyle: FontStyle.italic)),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar Prueba'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error de procesamiento IA: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
       if (mounted) {
         setState(() {
           _isProcessing = false;
         });
-        // Feedback visual temporal
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Interfaz lista. Esperando integración con la IA.')),
-        );
       }
-    });
+    }
   }
 
   @override
