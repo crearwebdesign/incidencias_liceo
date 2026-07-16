@@ -41,6 +41,7 @@ class _IncidenciaScreenState extends ConsumerState<IncidenciaScreen> {
       if (resultado != null && mounted) {
         // 3. Mostramos el objeto JSON procesado en un diálogo de confirmación.
         // (En el próximo paso, usaremos esto para buscar al alumno en la BD)
+        // 3. Mostramos el objeto JSON procesado en un diálogo de confirmación.
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -55,12 +56,24 @@ class _IncidenciaScreenState extends ConsumerState<IncidenciaScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Alumno: ${resultado['nombres']} ${resultado['apellidos']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                // Aplicamos las nuevas llaves y seguridad contra nulos (??)
+                Text(
+                  'Alumno: ${resultado['estudiante_nombre'] ?? 'Nombre no detectado'} ${resultado['estudiante_apellido'] ?? ''}', 
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                ),
                 const SizedBox(height: 8),
-                Text('Nivel de Gravedad: ${resultado['gravedad'].toString().toUpperCase()}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+                Text(
+                  'Gravedad: ${(resultado['nivel_gravedad'] ?? 'No clasificada').toString().toUpperCase()}', 
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800)
+                ),
                 const SizedBox(height: 12),
                 const Text('Síntesis del Reporte:', style: TextStyle(color: Colors.grey)),
-                Text(resultado['resumen_falta'], style: const TextStyle(fontStyle: FontStyle.italic)),
+                
+                // Aquí es donde explotaba. Ahora si descripcion_falta es null, mostrará un texto por defecto.
+                Text(
+                  resultado['descripcion_falta'] ?? 'La IA no generó una descripción.', 
+                  style: const TextStyle(fontStyle: FontStyle.italic)
+                ),
               ],
             ),
             actions: [
