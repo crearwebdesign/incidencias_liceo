@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/gemini_service.dart';
+import '../auth/auth_provider.dart';
 
 class IncidenciaScreen extends ConsumerStatefulWidget {
   const IncidenciaScreen({super.key});
@@ -20,11 +21,10 @@ class _IncidenciaScreenState extends ConsumerState<IncidenciaScreen> {
     super.dispose();
   }
 
-  // Esta función es el "esqueleto" que luego conectaremos con Gemini
- Future<void> _procesarIncidencia() async {
+Future<void> _procesarIncidencia() async {
     if (_textoController.text.trim().isEmpty) return;
     
-    // Cerramos el teclado
+    final textoOriginal = _textoController.text.trim();
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -32,63 +32,89 @@ class _IncidenciaScreenState extends ConsumerState<IncidenciaScreen> {
     });
 
     try {
-      // 1. Leemos el servicio de IA desde Riverpod
+      // 1. Instancias de Servicios
       final geminiService = ref.read(geminiServiceProvider);
-      
-      // 2. Enviamos el relato del docente a la red neuronal
-      final resultado = await geminiService.analizarIncidencia(_textoController.text);
+      final supabase = ref.read(supabaseProvider);
+      final userId = supabase.auth.currentUser?.id;
 
-      if (resultado != null && mounted) {
-        // 3. Mostramos el objeto JSON procesado en un diálogo de confirmación.
-        // (En el próximo paso, usaremos esto para buscar al alumno en la BD)
-        // 3. Mostramos el objeto JSON procesado en un diálogo de confirmación.
+      if (userId == null) throw Exception("Sesión inválida. Vuelva a iniciar sesión.");
+
+      // 2. Extracción con Inteligencia Artificial
+      final resultado = await geminiService.analizarIncidencia(textoOriginal);
+
+      if (resultado == null) throw Exception("La IA no pudo procesar el texto.");
+
+      // 3. EL PUENTE LÓGICO: Buscar al estudiante en la base de datos
+      // Usamos .ilike() para ignorar mayúsculas/minúsculas y .maybeSingle() para no romper la app si no existe.
+      final nombreBuscado = resultado['estudiante_nombre'] ?? '';
+      final apellidoBuscado = resultado['estudiante_apellido'] ?? '';
+
+      final alumnoDB = await supabase
+          .from('alumnos')
+          .select('id')
+          .ilike('nombres', '%$nombreBuscado%') // Busca coincidencias parciales
+          .ilike('apellidos', '%$apellidoBuscado%')
+          .limit(1)
+          .maybeSingle();
+
+      if (alumnoDB == null) {
+        throw Exception("Estudiante no encontrado: $nombreBuscado $apellidoBuscado. Verifique el nombre.");
+      }
+
+      // 4. SANITIZACIÓN: Asegurar que la gravedad cumpla el CHECK de PostgreSQL (todo en minúsculas)
+      String gravedadSanitizada = (resultado['nivel_gravedad'] ?? 'leve').toString().toLowerCase();
+      // Verificación de seguridad adicional
+      if (!['leve', 'moderada', 'grave'].contains(gravedadSanitizada)) {
+        gravedadSanitizada = 'leve'; // Valor por defecto si la IA alucina
+      }
+
+      // 5. INSERCIÓN FINAL (La Transacción)
+      await supabase.from('incidencias_ia').insert({
+        'grado': resultado['grado'],
+        'seccion': resultado['seccion'],
+        'materia': resultado['materia'],
+        'descripcion_falta': resultado['descripcion_falta'] ?? 'Descripción no generada',
+        'nivel_gravedad': gravedadSanitizada,
+        'accion_sugerida': resultado['accion_sugerida'],
+        'texto_original_dictado': textoOriginal,
+        'procesado_por_ia': true,
+        'alumno_id': alumnoDB['id'], // El BigInt extraído de la BD
+        'usuario_id': userId,        // El UUID del docente logueado
+      });
+
+      // 6. Éxito: Limpiar interfaz y notificar
+      if (mounted) {
+        _textoController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Incidencia registrada exitosamente en la Base de Datos!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
+        // Mostramos el error exacto (ej. Alumno no encontrado)
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green),
+                Icon(Icons.warning, color: Colors.red),
                 SizedBox(width: 8),
-                Text('Análisis Estructurado'),
+                Text('Error de Procesamiento'),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Aplicamos las nuevas llaves y seguridad contra nulos (??)
-                Text(
-                  'Alumno: ${resultado['estudiante_nombre'] ?? 'Nombre no detectado'} ${resultado['estudiante_apellido'] ?? ''}', 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Gravedad: ${(resultado['nivel_gravedad'] ?? 'No clasificada').toString().toUpperCase()}', 
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800)
-                ),
-                const SizedBox(height: 12),
-                const Text('Síntesis del Reporte:', style: TextStyle(color: Colors.grey)),
-                
-                // Aquí es donde explotaba. Ahora si descripcion_falta es null, mostrará un texto por defecto.
-                Text(
-                  resultado['descripcion_falta'] ?? 'La IA no generó una descripción.', 
-                  style: const TextStyle(fontStyle: FontStyle.italic)
-                ),
-              ],
-            ),
+            content: Text(e.toString().replaceAll('Exception:', '').trim()),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cerrar Prueba'),
+                child: const Text('Entendido'),
               ),
             ],
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error de procesamiento IA: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
